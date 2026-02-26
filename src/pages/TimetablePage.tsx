@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Plus, Trash2, CalendarDays, Sparkles } from "lucide-react";
+import { Loader2, Plus, Trash2, CalendarDays, Sparkles, Upload } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -38,6 +39,9 @@ export default function TimetablePage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [parsing, setParsing] = useState(false);
   const [form, setForm] = useState({
     title: "", entry_type: "academic", day_of_week: "1", start_time: "09:00", end_time: "10:00", location: "", notes: "",
   });
@@ -96,6 +100,54 @@ export default function TimetablePage() {
       setGenerating(false);
     }
   };
+
+  const parseTimetableText = async () => {
+    if (!pasteText.trim() || !user) return;
+    setParsing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-timetable", {
+        body: { text: pasteText },
+      });
+      if (error) throw error;
+      
+      const parsed = data?.entries || [];
+      if (parsed.length === 0) {
+        toast.error("Could not parse any entries. Try a clearer format.");
+        setParsing(false);
+        return;
+      }
+
+      const rows = parsed.map((e: any) => ({
+        user_id: user.id,
+        title: e.title || "Untitled",
+        entry_type: e.entry_type || "academic",
+        day_of_week: typeof e.day_of_week === "number" ? e.day_of_week : 1,
+        start_time: e.start_time || "09:00",
+        end_time: e.end_time || "10:00",
+        location: e.location || null,
+        notes: e.notes || null,
+      }));
+
+      const { error: insertError } = await supabase.from("timetable_entries").insert(rows);
+      if (insertError) throw insertError;
+
+      toast.success(`${rows.length} entries added from your timetable!`);
+      setUploadDialogOpen(false);
+      setPasteText("");
+      loadData();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to parse timetable");
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const handleTimetableFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    setPasteText(text);
+  }, []);
 
   const entriesByDay = DAYS.map((day, i) => ({
     day,
@@ -161,6 +213,38 @@ export default function TimetablePage() {
             {generating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
             Generate Study Plan
           </Button>
+          <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline"><Upload className="w-4 h-4 mr-2" /> Upload / Paste Timetable</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle className="font-display">Import Your Timetable</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Paste your timetable below or upload a text/CSV file. AI will parse it into schedule entries.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Example format: "Monday 09:00-10:00 Physics Lecture Room 101"
+                </p>
+                <div>
+                  <Label>Upload File (optional)</Label>
+                  <Input type="file" accept=".txt,.csv,.text" onChange={handleTimetableFile} />
+                </div>
+                <div>
+                  <Label>Or paste your timetable</Label>
+                  <Textarea
+                    value={pasteText}
+                    onChange={(e) => setPasteText(e.target.value)}
+                    placeholder={"Monday 09:00-10:00 Physics Lecture Room 101\nTuesday 14:00-16:00 Math Tutorial Lab 3\nWednesday 10:00-11:30 Chemistry Lab Science Building"}
+                    rows={8}
+                  />
+                </div>
+                <Button onClick={parseTimetableText} disabled={!pasteText.trim() || parsing} className="w-full">
+                  {parsing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Parsing...</> : "Import Timetable"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

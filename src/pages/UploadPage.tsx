@@ -5,27 +5,61 @@ import { analyzeSlides } from "@/lib/ai";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Upload as UploadIcon, FileText, Loader2, BookOpen, CreditCard, HelpCircle, FileCheck } from "lucide-react";
+import { Upload as UploadIcon, Loader2, BookOpen, CreditCard, HelpCircle, FileCheck, FileText, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Progress } from "@/components/ui/progress";
+
+const ALL_ACTIONS = [
+  { action: "summary", label: "Summary", icon: FileCheck, desc: "Concise lecture summary" },
+  { action: "notes", label: "Study Notes", icon: BookOpen, desc: "Structured notes" },
+  { action: "flashcards", label: "Flashcards", icon: CreditCard, desc: "Q&A flashcards" },
+  { action: "quiz", label: "Quiz", icon: HelpCircle, desc: "Exam questions" },
+  { action: "study_guide", label: "Study Guide", icon: FileText, desc: "Complete study guide" },
+];
 
 export default function UploadPage() {
   const { user } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  // Auto-generation state
+  const [generating, setGenerating] = useState(false);
+  const [completedActions, setCompletedActions] = useState<string[]>([]);
+  const [currentAction, setCurrentAction] = useState<string | null>(null);
   const [uploadId, setUploadId] = useState<string | null>(null);
   const [slideText, setSlideText] = useState("");
-  const [generating, setGenerating] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
+  // Manual generation after auto
+  const [manualGenerating, setManualGenerating] = useState<string | null>(null);
+
+  const extractTextFromFile = async (file: File): Promise<string> => {
+    if (file.type === "text/plain") {
+      return await file.text();
+    }
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    const decoder = new TextDecoder("utf-8", { fatal: false });
+    const rawText = decoder.decode(bytes);
+    let text = "";
+    const matches = rawText.match(/\(([^)]+)\)/g);
+    if (matches) {
+      text = matches.map(m => m.slice(1, -1)).join(" ");
+    }
+    if (text.length < 50) {
+      text = rawText.replace(/[^\x20-\x7E\n]/g, " ").replace(/\s+/g, " ").substring(0, 10000);
+    }
+    return text.substring(0, 15000) || "Unable to extract text from this PDF. Please try a text-based PDF.";
+  };
 
   const handleUpload = async () => {
     if (!file || !user) return;
     setUploading(true);
+    setCompletedActions([]);
+    setCurrentAction(null);
     try {
       const filePath = `${user.id}/${Date.now()}_${file.name}`;
       const { error: storageError } = await supabase.storage.from("slides").upload(filePath, file);
       if (storageError) throw storageError;
 
-      // For now, read text from file client-side (basic PDF text extraction placeholder)
       const text = await extractTextFromFile(file);
       setSlideText(text);
 
@@ -40,47 +74,44 @@ export default function UploadPage() {
 
       if (error) throw error;
       setUploadId(data.id);
-      toast.success("File uploaded successfully!");
+      toast.success("File uploaded! Now auto-generating all study materials...");
+      setUploading(false);
+
+      // Auto-generate all materials
+      await autoGenerateAll(data.id, text);
     } catch (err: any) {
       toast.error(err.message || "Upload failed");
-    } finally {
       setUploading(false);
     }
   };
 
-  const extractTextFromFile = async (file: File): Promise<string> => {
-    // Basic text extraction - reads file as text for txt, or provides placeholder for PDF
-    if (file.type === "text/plain") {
-      return await file.text();
+  const autoGenerateAll = async (id: string, text: string) => {
+    setGenerating(true);
+    for (const a of ALL_ACTIONS) {
+      setCurrentAction(a.action);
+      try {
+        await analyzeSlides(id, a.action, text);
+        setCompletedActions(prev => [...prev, a.action]);
+      } catch (err: any) {
+        toast.error(`${a.label} failed: ${err.message}`);
+      }
     }
-    // For PDF - we'll extract what we can from the raw bytes
-    const buffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    let text = "";
-    // Simple extraction of text strings from PDF
-    const decoder = new TextDecoder("utf-8", { fatal: false });
-    const rawText = decoder.decode(bytes);
-    // Extract text between BT and ET markers (basic PDF text extraction)
-    const matches = rawText.match(/\(([^)]+)\)/g);
-    if (matches) {
-      text = matches.map(m => m.slice(1, -1)).join(" ");
-    }
-    if (text.length < 50) {
-      text = rawText.replace(/[^\x20-\x7E\n]/g, " ").replace(/\s+/g, " ").substring(0, 10000);
-    }
-    return text.substring(0, 15000) || "Unable to extract text from this PDF. Please try a text-based PDF.";
+    setCurrentAction(null);
+    setGenerating(false);
+    toast.success("All study materials generated! Check Summaries, Flashcards, and Quiz pages.");
   };
 
-  const handleGenerate = async (action: string) => {
+  const handleManualGenerate = async (action: string) => {
     if (!uploadId || !slideText) return;
-    setGenerating(action);
+    setManualGenerating(action);
     try {
-      const result = await analyzeSlides(uploadId, action, slideText);
-      toast.success(`${action.charAt(0).toUpperCase() + action.slice(1)} generated!`);
+      await analyzeSlides(uploadId, action, slideText);
+      toast.success(`${action.charAt(0).toUpperCase() + action.slice(1)} regenerated!`);
+      setCompletedActions(prev => prev.includes(action) ? prev : [...prev, action]);
     } catch (err: any) {
       toast.error(err.message || "Generation failed");
     } finally {
-      setGenerating(null);
+      setManualGenerating(null);
     }
   };
 
@@ -95,19 +126,15 @@ export default function UploadPage() {
     }
   }, []);
 
-  const actions = [
-    { action: "summary", label: "Summary", icon: FileCheck, desc: "Concise lecture summary" },
-    { action: "notes", label: "Study Notes", icon: BookOpen, desc: "Structured notes" },
-    { action: "flashcards", label: "Flashcards", icon: CreditCard, desc: "Q&A flashcards" },
-    { action: "quiz", label: "Quiz", icon: HelpCircle, desc: "Exam questions" },
-    { action: "study_guide", label: "Study Guide", icon: FileText, desc: "Complete study guide" },
-  ];
+  const progress = ALL_ACTIONS.length > 0
+    ? Math.round((completedActions.length / ALL_ACTIONS.length) * 100)
+    : 0;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold text-foreground">Upload Lecture Slides</h1>
-        <p className="text-muted-foreground mt-1">Upload your PDF slides and let AI generate study materials</p>
+        <p className="text-muted-foreground mt-1">Upload your PDF and we'll automatically generate all study materials — summaries, notes, flashcards, quiz questions, and a study guide</p>
       </div>
 
       <Card className="border-border/50">
@@ -138,9 +165,9 @@ export default function UploadPage() {
                   <span>Browse Files</span>
                 </Button>
               </label>
-              {file && (
+              {file && !generating && (
                 <Button onClick={handleUpload} disabled={uploading}>
-                  {uploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Uploading...</> : "Upload"}
+                  {uploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Uploading...</> : "Upload & Generate All"}
                 </Button>
               )}
             </div>
@@ -148,33 +175,52 @@ export default function UploadPage() {
         </CardContent>
       </Card>
 
-      {uploadId && (
+      {/* Auto-generation progress */}
+      {(generating || completedActions.length > 0) && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="border-border/50">
             <CardHeader>
-              <CardTitle className="font-display text-lg">Generate Study Materials</CardTitle>
+              <CardTitle className="font-display text-lg">
+                {generating ? "Generating Study Materials..." : "Study Materials Ready!"}
+              </CardTitle>
+              {generating && (
+                <div className="mt-2">
+                  <Progress value={progress} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-1">{completedActions.length}/{ALL_ACTIONS.length} completed</p>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {actions.map((a) => (
-                  <Button
-                    key={a.action}
-                    variant="outline"
-                    className="h-auto p-4 flex flex-col items-start gap-1"
-                    disabled={generating !== null}
-                    onClick={() => handleGenerate(a.action)}
-                  >
-                    <div className="flex items-center gap-2">
-                      {generating === a.action ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                      ) : (
-                        <a.icon className="w-4 h-4 text-primary" />
-                      )}
-                      <span className="font-medium">{a.label}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{a.desc}</span>
-                  </Button>
-                ))}
+                {ALL_ACTIONS.map((a) => {
+                  const isComplete = completedActions.includes(a.action);
+                  const isCurrent = currentAction === a.action;
+                  const isManual = manualGenerating === a.action;
+
+                  return (
+                    <Button
+                      key={a.action}
+                      variant={isComplete ? "default" : "outline"}
+                      className={`h-auto p-4 flex flex-col items-start gap-1 ${isComplete ? "bg-primary/10 text-primary border-primary/20" : ""}`}
+                      disabled={generating || isManual}
+                      onClick={() => handleManualGenerate(a.action)}
+                    >
+                      <div className="flex items-center gap-2">
+                        {isCurrent || isManual ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                        ) : isComplete ? (
+                          <CheckCircle2 className="w-4 h-4 text-primary" />
+                        ) : (
+                          <a.icon className="w-4 h-4 text-primary" />
+                        )}
+                        <span className="font-medium">{a.label}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {isCurrent ? "Generating..." : isComplete ? "Done — click to regenerate" : a.desc}
+                      </span>
+                    </Button>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
