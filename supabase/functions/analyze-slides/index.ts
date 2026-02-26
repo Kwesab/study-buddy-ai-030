@@ -27,24 +27,36 @@ serve(async (req) => {
 
     const { uploadId, action, slideText } = await req.json();
 
+    const beginnerNote = `IMPORTANT: Write everything at a BEGINNER level. Use simple, everyday language that a first-year student with no prior knowledge can understand. Avoid jargon — if you must use a technical term, immediately explain it in plain English with a relatable analogy or example. Keep sentences short and clear.`;
+
     const prompts: Record<string, string> = {
-      summary: `You are an educational AI. Given the following lecture content, create a concise summary. Return JSON: {"title": "...", "summary": "...", "key_points": ["..."], "key_terms": [{"term": "...", "definition": "..."}]}
+      summary: `You are a friendly tutor explaining things to a complete beginner. ${beginnerNote}
+
+Given the following lecture content, create a concise summary. Break down complex ideas into simple terms. Use analogies and real-life examples wherever possible. Return JSON: {"title": "...", "summary": "...", "key_points": ["..."], "key_terms": [{"term": "...", "definition": "..."}]}
 
 Lecture content:
 ${slideText}`,
-      notes: `You are an educational AI. Create structured study notes from the following lecture. Return JSON: {"title": "...", "sections": [{"heading": "...", "content": "...", "bullet_points": ["..."]}]}
+      notes: `You are a friendly tutor explaining things to a complete beginner. ${beginnerNote}
+
+Create structured study notes from the following lecture. Each section should explain concepts as if the reader has never encountered them before. Use bullet points with simple language and examples. Return JSON: {"title": "...", "sections": [{"heading": "...", "content": "...", "bullet_points": ["..."]}]}
 
 Lecture content:
 ${slideText}`,
-      flashcards: `You are an educational AI. Generate 10 flashcards from this lecture content. Return JSON: {"flashcards": [{"question": "...", "answer": "...", "difficulty": "easy|medium|hard"}]}
+      flashcards: `You are a friendly tutor creating study cards for a complete beginner. ${beginnerNote}
+
+Generate 10 flashcards from this lecture content. Questions should test understanding, not memorization. Answers should be clear, simple explanations with examples where helpful. Return JSON: {"flashcards": [{"question": "...", "answer": "...", "difficulty": "easy|medium|hard"}]}
 
 Lecture content:
 ${slideText}`,
-      quiz: `You are an educational AI. Generate exam-style questions from this lecture. Include 5 MCQ, 3 True/False, and 2 short answer questions. Return JSON: {"questions": [{"type": "mcq|true_false|short_answer", "question": "...", "options": ["..."] or null, "correct_answer": "...", "explanation": "..."}]}
+      quiz: `You are a friendly tutor writing a practice quiz for a complete beginner. ${beginnerNote}
+
+Generate exam-style questions from this lecture. Include 5 MCQ, 3 True/False, and 2 short answer questions. Make questions straightforward. Every explanation should teach the concept in simple terms with an example. Return JSON: {"questions": [{"type": "mcq|true_false|short_answer", "question": "...", "options": ["..."] or null, "correct_answer": "...", "explanation": "..."}]}
 
 Lecture content:
 ${slideText}`,
-      study_guide: `You are an educational AI. Create a complete self-learning study guide from this lecture. Return JSON: {"title": "...", "learning_objectives": ["..."], "prerequisite_knowledge": ["..."], "study_plan": [{"topic": "...", "duration_minutes": 30, "activities": ["..."], "resources": ["..."]}], "review_questions": ["..."]}
+      study_guide: `You are a friendly tutor creating a self-study roadmap for a complete beginner. ${beginnerNote}
+
+Create a complete self-learning study guide from this lecture. Assume the student is starting from scratch. Suggest simple activities and free resources. Return JSON: {"title": "...", "learning_objectives": ["..."], "prerequisite_knowledge": ["..."], "study_plan": [{"topic": "...", "duration_minutes": 30, "activities": ["..."], "resources": ["..."]}], "review_questions": ["..."]}
 
 Lecture content:
 ${slideText}`,
@@ -62,7 +74,7 @@ ${slideText}`,
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "You are an expert educational AI assistant. Always respond with valid JSON only, no markdown formatting." },
+          { role: "system", content: "You are a friendly, patient tutor who explains everything at a beginner level using simple language, analogies, and real-life examples. Avoid jargon. Always respond with valid JSON only, no markdown formatting." },
           { role: "user", content: prompt },
         ],
         temperature: 0.7,
