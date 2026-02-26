@@ -1,0 +1,7 @@
+project_id = "sbvkaaywhytxvkcleorj"
+
+[functions.analyze-slides]
+verify_jwt = false
+
+[functions.ai-chat]
+verify_jwt = false
