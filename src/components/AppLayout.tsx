@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -14,6 +14,8 @@ import {
   X,
   CalendarDays,
   TrendingUp,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { signOut, user } = useAuth();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("theme", dark ? "dark" : "light");
+  }, [dark]);
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -66,8 +74,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="border-t border-border pt-4 mt-4">
-          <p className="text-xs text-muted-foreground px-3 mb-2 truncate">{user?.email}</p>
+        <div className="border-t border-border pt-4 mt-4 space-y-2">
+          <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => setDark(!dark)}>
+            {dark ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
+            {dark ? "Light Mode" : "Dark Mode"}
+          </Button>
+          <p className="text-xs text-muted-foreground px-3 truncate">{user?.email}</p>
           <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={signOut}>
             <LogOut className="w-4 h-4 mr-2" /> Sign Out
           </Button>
@@ -109,7 +121,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </NavLink>
               ))}
             </nav>
-            <div className="border-t border-border pt-4 mt-4">
+            <div className="border-t border-border pt-4 mt-4 space-y-2">
+              <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={() => setDark(!dark)}>
+                {dark ? <Sun className="w-4 h-4 mr-2" /> : <Moon className="w-4 h-4 mr-2" />}
+                {dark ? "Light Mode" : "Dark Mode"}
+              </Button>
               <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={signOut}>
                 <LogOut className="w-4 h-4 mr-2" /> Sign Out
               </Button>
