@@ -8,9 +8,7 @@ import AppLayout from "@/components/AppLayout";
 import AuthPage from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import UploadPage from "@/pages/UploadPage";
-import SummariesPage from "@/pages/SummariesPage";
-import FlashcardsPage from "@/pages/FlashcardsPage";
-import QuizPage from "@/pages/QuizPage";
+import TopicsPage from "@/pages/TopicsPage";
 import ChatPage from "@/pages/ChatPage";
 import PerformancePage from "@/pages/PerformancePage";
 import TimetablePage from "@/pages/TimetablePage";
@@ -44,9 +42,10 @@ const App = () => (
             <Route path="/auth" element={<AuthRoute />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/upload" element={<ProtectedRoute><UploadPage /></ProtectedRoute>} />
-            <Route path="/summaries" element={<ProtectedRoute><SummariesPage /></ProtectedRoute>} />
-            <Route path="/flashcards" element={<ProtectedRoute><FlashcardsPage /></ProtectedRoute>} />
-            <Route path="/quiz" element={<ProtectedRoute><QuizPage /></ProtectedRoute>} />
+            <Route path="/topics" element={<ProtectedRoute><TopicsPage /></ProtectedRoute>} />
+            <Route path="/summaries" element={<ProtectedRoute><TopicsPage /></ProtectedRoute>} />
+            <Route path="/flashcards" element={<ProtectedRoute><TopicsPage /></ProtectedRoute>} />
+            <Route path="/quiz" element={<ProtectedRoute><TopicsPage /></ProtectedRoute>} />
             <Route path="/performance" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
             <Route path="/timetable" element={<ProtectedRoute><TimetablePage /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
