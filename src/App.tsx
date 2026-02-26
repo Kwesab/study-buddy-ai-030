@@ -12,6 +12,8 @@ import SummariesPage from "@/pages/SummariesPage";
 import FlashcardsPage from "@/pages/FlashcardsPage";
 import QuizPage from "@/pages/QuizPage";
 import ChatPage from "@/pages/ChatPage";
+import PerformancePage from "@/pages/PerformancePage";
+import TimetablePage from "@/pages/TimetablePage";
 import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -45,6 +47,8 @@ const App = () => (
             <Route path="/summaries" element={<ProtectedRoute><SummariesPage /></ProtectedRoute>} />
             <Route path="/flashcards" element={<ProtectedRoute><FlashcardsPage /></ProtectedRoute>} />
             <Route path="/quiz" element={<ProtectedRoute><QuizPage /></ProtectedRoute>} />
+            <Route path="/performance" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
+            <Route path="/timetable" element={<ProtectedRoute><TimetablePage /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -125,6 +125,51 @@ export type Database = {
           },
         ]
       }
+      quiz_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          is_correct: boolean
+          question_id: string
+          selected_answer: string
+          upload_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_correct: boolean
+          question_id: string
+          selected_answer: string
+          upload_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string
+          selected_answer?: string
+          upload_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_questions: {
         Row: {
           correct_answer: string
@@ -168,6 +213,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      study_plans: {
+        Row: {
+          created_at: string
+          id: string
+          plan_data: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_data?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_data?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      timetable_entries: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          entry_type: string
+          id: string
+          location: string | null
+          notes: string | null
+          start_time: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          entry_type?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          start_time: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          entry_type?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          start_time?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       uploads: {
         Row: {
