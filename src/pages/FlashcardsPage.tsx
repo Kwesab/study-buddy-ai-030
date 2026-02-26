@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOnlineStatus } from "@/hooks/useOfflineSync";
+import { cacheData, getCachedData } from "@/lib/offlineDb";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, RotateCcw, Check, Loader2 } from "lucide-react";
+import { CreditCard, RotateCcw, Check, Loader2, WifiOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +19,7 @@ interface Flashcard {
 
 export default function FlashcardsPage() {
   const { user } = useAuth();
+  const online = useOnlineStatus();
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -25,16 +28,24 @@ export default function FlashcardsPage() {
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("flashcards")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setCards((data as Flashcard[]) || []);
-        setLoading(false);
-      });
-  }, [user]);
+    const load = async () => {
+      if (online) {
+        const { data } = await supabase
+          .from("flashcards")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+        const fc = (data as Flashcard[]) || [];
+        setCards(fc);
+        cacheData("flashcards", fc);
+      } else {
+        const cached = await getCachedData<Flashcard>("flashcards");
+        setCards(cached);
+      }
+      setLoading(false);
+    };
+    load();
+  }, [user, online]);
 
   const filtered = filter === "all" ? cards : cards.filter(c => !c.mastered);
   const current = filtered[currentIndex];

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOnlineStatus } from "@/hooks/useOfflineSync";
+import { cacheData, getCachedData } from "@/lib/offlineDb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,10 +20,12 @@ interface QuizQuestion {
   options: string[] | null;
   correct_answer: string;
   explanation: string | null;
+  upload_id: string;
 }
 
 export default function QuizPage() {
   const { user } = useAuth();
+  const online = useOnlineStatus();
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -31,31 +35,48 @@ export default function QuizPage() {
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("quiz_questions")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setQuestions((data as QuizQuestion[]) || []);
-        setLoading(false);
-      });
-  }, [user]);
+    const load = async () => {
+      if (online) {
+        const { data } = await supabase
+          .from("quiz_questions")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+        const qs = (data as QuizQuestion[]) || [];
+        setQuestions(qs);
+        cacheData("quizzes", qs);
+      } else {
+        const cached = await getCachedData<QuizQuestion>("quizzes");
+        setQuestions(cached);
+      }
+      setLoading(false);
+    };
+    load();
+  }, [user, online]);
 
   const current = questions[currentIndex];
 
-  const checkAnswer = (qId: string) => {
+  const checkAnswer = async (qId: string) => {
     const answer = answers[qId]?.toLowerCase().trim();
     const correct = current.correct_answer.toLowerCase().trim();
-    const isCorrect = answer === correct || 
-      (current.question_type === "true_false" && answer === correct) ||
-      (current.question_type === "mcq" && answer === correct);
+    const isCorrect = answer === correct;
     
     setShowResult(prev => ({ ...prev, [qId]: true }));
     if (isCorrect) {
       setScore(prev => ({ ...prev, correct: prev.correct + 1, total: prev.total + 1 }));
     } else {
       setScore(prev => ({ ...prev, total: prev.total + 1 }));
+    }
+
+    // Track attempt
+    if (user) {
+      await supabase.from("quiz_attempts").insert({
+        user_id: user.id,
+        question_id: current.id,
+        upload_id: (current as any).upload_id,
+        selected_answer: answers[qId],
+        is_correct: isCorrect,
+      });
     }
   };
 

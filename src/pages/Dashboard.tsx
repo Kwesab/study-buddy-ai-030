@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, BookOpen, CreditCard, HelpCircle, Sparkles } from "lucide-react";
+import { Upload, BookOpen, CreditCard, HelpCircle, Sparkles, TrendingUp, CalendarDays } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -39,6 +39,8 @@ export default function Dashboard() {
     { title: "Summaries", value: stats.summaries, icon: BookOpen, to: "/summaries", color: "text-accent" },
     { title: "Flashcards", value: stats.flashcards, icon: CreditCard, to: "/flashcards", color: "text-warning" },
     { title: "Quiz Questions", value: stats.quizzes, icon: HelpCircle, to: "/quiz", color: "text-info" },
+    { title: "Performance", value: null, icon: TrendingUp, to: "/performance", color: "text-success" },
+    { title: "Timetable", value: null, icon: CalendarDays, to: "/timetable", color: "text-primary" },
   ];
 
   return (
@@ -65,7 +67,7 @@ export default function Dashboard() {
                   <card.icon className={`w-5 h-5 ${card.color}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-display font-bold text-foreground">{card.value}</div>
+                  <div className="text-3xl font-display font-bold text-foreground">{card.value !== null ? card.value : "→"}</div>
                 </CardContent>
               </Card>
             </Link>

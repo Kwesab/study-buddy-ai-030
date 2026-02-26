@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOnlineStatus } from "@/hooks/useOfflineSync";
+import { cacheData, getCachedData } from "@/lib/offlineDb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, FileText, Loader2 } from "lucide-react";
@@ -17,21 +19,30 @@ interface ContentItem {
 
 export default function SummariesPage() {
   const { user } = useAuth();
+  const online = useOnlineStatus();
   const [items, setItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("generated_content")
-      .select("*, uploads(file_name)")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setItems((data as any[]) || []);
-        setLoading(false);
-      });
-  }, [user]);
+    const load = async () => {
+      if (online) {
+        const { data } = await supabase
+          .from("generated_content")
+          .select("*, uploads(file_name)")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+        const content = (data as any[]) || [];
+        setItems(content);
+        cacheData("summaries", content);
+      } else {
+        const cached = await getCachedData<ContentItem>("summaries");
+        setItems(cached);
+      }
+      setLoading(false);
+    };
+    load();
+  }, [user, online]);
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;

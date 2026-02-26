@@ -12,6 +12,8 @@ import {
   GraduationCap,
   Menu,
   X,
+  CalendarDays,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,6 +24,8 @@ const navItems = [
   { to: "/summaries", icon: BookOpen, label: "Summaries & Notes" },
   { to: "/flashcards", icon: CreditCard, label: "Flashcards" },
   { to: "/quiz", icon: HelpCircle, label: "Quiz" },
+  { to: "/performance", icon: TrendingUp, label: "Performance" },
+  { to: "/timetable", icon: CalendarDays, label: "Timetable" },
   { to: "/chat", icon: MessageSquare, label: "AI Tutor" },
 ];
 
