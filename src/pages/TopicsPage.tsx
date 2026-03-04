@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase as supabaseClient } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,62 +9,42 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   BookOpen, CreditCard, HelpCircle, Loader2, ArrowLeft,
-  FileText, CheckCircle2, XCircle, Check, ChevronRight,
+  FileText, CheckCircle2, XCircle, Check, ChevronRight, Search, Trash2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
-interface Upload {
-  id: string;
-  file_name: string;
-  created_at: string;
-}
-
-interface ContentItem {
-  id: string;
-  content_type: string;
-  content: any;
-  upload_id: string;
-}
-
-interface Flashcard {
-  id: string;
-  question: string;
-  answer: string;
-  difficulty: string;
-  mastered: boolean;
-  upload_id: string;
-}
-
-interface QuizQuestion {
-  id: string;
-  question_type: string;
-  question: string;
-  options: string[] | null;
-  correct_answer: string;
-  explanation: string | null;
-  upload_id: string;
-}
+interface Upload { id: string; file_name: string; created_at: string; }
+interface ContentItem { id: string; content_type: string; content: any; upload_id: string; }
+interface Flashcard { id: string; question: string; answer: string; difficulty: string; mastered: boolean; upload_id: string; }
+interface QuizQuestion { id: string; question_type: string; question: string; options: string[] | null; correct_answer: string; explanation: string | null; upload_id: string; }
 
 export default function TopicsPage() {
   const { user } = useAuth();
-  
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [content, setContent] = useState<ContentItem[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUpload, setSelectedUpload] = useState<Upload | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
     const load = async () => {
       const [u, c, f, q] = await Promise.all([
-        supabaseClient.from("uploads").select("id, file_name, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
-        supabaseClient.from("generated_content").select("id, content_type, content, upload_id").eq("user_id", user.id),
-        supabaseClient.from("flashcards").select("*").eq("user_id", user.id),
-        supabaseClient.from("quiz_questions").select("*").eq("user_id", user.id),
+        supabase.from("uploads").select("id, file_name, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("generated_content").select("id, content_type, content, upload_id").eq("user_id", user.id),
+        supabase.from("flashcards").select("*").eq("user_id", user.id),
+        supabase.from("quiz_questions").select("*").eq("user_id", user.id),
       ]);
       setUploads((u.data as Upload[]) || []);
       setContent((c.data as ContentItem[]) || []);
@@ -75,6 +54,32 @@ export default function TopicsPage() {
     };
     load();
   }, [user]);
+
+  const deleteTopic = async (uploadId: string) => {
+    setDeleting(uploadId);
+    try {
+      await Promise.all([
+        supabase.from("quiz_attempts").delete().eq("upload_id", uploadId),
+        supabase.from("quiz_questions").delete().eq("upload_id", uploadId),
+        supabase.from("flashcards").delete().eq("upload_id", uploadId),
+        supabase.from("generated_content").delete().eq("upload_id", uploadId),
+        supabase.from("chat_messages").delete().eq("upload_id", uploadId),
+      ]);
+      await supabase.from("uploads").delete().eq("id", uploadId);
+
+      setUploads(prev => prev.filter(u => u.id !== uploadId));
+      setContent(prev => prev.filter(c => c.upload_id !== uploadId));
+      setFlashcards(prev => prev.filter(f => f.upload_id !== uploadId));
+      setQuestions(prev => prev.filter(q => q.upload_id !== uploadId));
+      if (selectedUpload?.id === uploadId) setSelectedUpload(null);
+
+      toast({ title: "Topic deleted", description: "All associated content has been removed." });
+    } catch {
+      toast({ title: "Error", description: "Failed to delete topic.", variant: "destructive" });
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
@@ -95,10 +100,14 @@ export default function TopicsPage() {
         onFlashcardUpdate={(id, mastered) => {
           setFlashcards(prev => prev.map(f => f.id === id ? { ...f, mastered } : f));
         }}
+        onDelete={() => deleteTopic(selectedUpload.id)}
+        deleting={deleting === selectedUpload.id}
         user={user}
       />
     );
   }
+
+  const filtered = uploads.filter(u => u.file_name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div className="space-y-6">
@@ -107,25 +116,39 @@ export default function TopicsPage() {
         <p className="text-muted-foreground mt-1">Select a topic to view summaries, flashcards & quizzes</p>
       </div>
 
+      {uploads.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search topics..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      )}
+
       {uploads.length === 0 ? (
         <div className="text-center py-16">
           <BookOpen className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
           <p className="text-muted-foreground">No topics yet. Upload slides to get started!</p>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12">
+          <Search className="w-10 h-10 mx-auto text-muted-foreground/50 mb-3" />
+          <p className="text-muted-foreground">No topics match "{searchQuery}"</p>
+        </div>
       ) : (
         <div className="grid gap-3">
-          {uploads.map((upload, i) => {
-            const hasContent = content.some(c => c.upload_id === upload.id);
+          {filtered.map((upload, i) => {
             const fcCount = flashcards.filter(f => f.upload_id === upload.id).length;
             const qCount = questions.filter(q => q.upload_id === upload.id).length;
             const summaryCount = content.filter(c => c.upload_id === upload.id && c.content_type === "summary").length;
+            const hasContent = summaryCount > 0 || fcCount > 0 || qCount > 0;
 
             return (
               <motion.div key={upload.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                <Card
-                  className="border-border/50 cursor-pointer hover:border-primary/30 hover:shadow-md transition-all"
-                  onClick={() => setSelectedUpload(upload)}
-                >
+                <Card className="border-border/50 cursor-pointer hover:border-primary/30 hover:shadow-md transition-all" onClick={() => setSelectedUpload(upload)}>
                   <CardContent className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -137,13 +160,35 @@ export default function TopicsPage() {
                           {summaryCount > 0 && <Badge variant="secondary" className="text-xs">Summary</Badge>}
                           {fcCount > 0 && <Badge variant="secondary" className="text-xs">{fcCount} Cards</Badge>}
                           {qCount > 0 && <Badge variant="secondary" className="text-xs">{qCount} Quiz Q's</Badge>}
-                          {!hasContent && fcCount === 0 && qCount === 0 && (
-                            <span className="text-xs text-muted-foreground">Processing...</span>
-                          )}
+                          {!hasContent && <span className="text-xs text-muted-foreground">Processing...</span>}
                         </div>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <div className="flex items-center gap-1 shrink-0">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={e => e.stopPropagation()}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={e => e.stopPropagation()}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete topic?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete "{upload.file_name}" and all its summaries, flashcards, and quiz questions.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteTopic(upload.id)}>
+                              {deleting === upload.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -158,57 +203,58 @@ export default function TopicsPage() {
 /* ─── Topic Detail View ─── */
 
 function TopicDetail({
-  upload, content, flashcards, questions, onBack, onFlashcardUpdate, user,
+  upload, content, flashcards, questions, onBack, onFlashcardUpdate, onDelete, deleting, user,
 }: {
-  upload: Upload;
-  content: ContentItem[];
-  flashcards: Flashcard[];
-  questions: QuizQuestion[];
-  onBack: () => void;
-  onFlashcardUpdate: (id: string, mastered: boolean) => void;
-  user: any;
+  upload: Upload; content: ContentItem[]; flashcards: Flashcard[]; questions: QuizQuestion[];
+  onBack: () => void; onFlashcardUpdate: (id: string, mastered: boolean) => void;
+  onDelete: () => void; deleting: boolean; user: any;
 }) {
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-display font-bold text-foreground truncate">{upload.file_name}</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">All study materials for this topic</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="w-5 h-5" /></Button>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-display font-bold text-foreground truncate">{upload.file_name}</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">All study materials for this topic</p>
+          </div>
         </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
+              <Trash2 className="w-4 h-4 mr-1.5" /> Delete
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this topic?</AlertDialogTitle>
+              <AlertDialogDescription>This will permanently delete all summaries, flashcards, and quiz questions for "{upload.file_name}".</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={onDelete}>
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null} Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <Tabs defaultValue="summary">
         <TabsList>
-          <TabsTrigger value="summary">
-            <BookOpen className="w-4 h-4 mr-1.5" /> Summary
-          </TabsTrigger>
-          <TabsTrigger value="flashcards">
-            <CreditCard className="w-4 h-4 mr-1.5" /> Flashcards ({flashcards.length})
-          </TabsTrigger>
-          <TabsTrigger value="quiz">
-            <HelpCircle className="w-4 h-4 mr-1.5" /> Quiz ({questions.length})
-          </TabsTrigger>
+          <TabsTrigger value="summary"><BookOpen className="w-4 h-4 mr-1.5" /> Summary</TabsTrigger>
+          <TabsTrigger value="flashcards"><CreditCard className="w-4 h-4 mr-1.5" /> Flashcards ({flashcards.length})</TabsTrigger>
+          <TabsTrigger value="quiz"><HelpCircle className="w-4 h-4 mr-1.5" /> Quiz ({questions.length})</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="summary" className="mt-4 space-y-4">
-          <SummaryTab content={content} />
-        </TabsContent>
-        <TabsContent value="flashcards" className="mt-4">
-          <FlashcardsTab flashcards={flashcards} onUpdate={onFlashcardUpdate} />
-        </TabsContent>
-        <TabsContent value="quiz" className="mt-4">
-          <QuizTab questions={questions} user={user} />
-        </TabsContent>
+        <TabsContent value="summary" className="mt-4 space-y-4"><SummaryTab content={content} /></TabsContent>
+        <TabsContent value="flashcards" className="mt-4"><FlashcardsTab flashcards={flashcards} onUpdate={onFlashcardUpdate} /></TabsContent>
+        <TabsContent value="quiz" className="mt-4"><QuizTab questions={questions} user={user} /></TabsContent>
       </Tabs>
     </div>
   );
 }
 
 /* ─── Summary Tab ─── */
-
 function SummaryTab({ content }: { content: ContentItem[] }) {
   const summaries = content.filter(c => c.content_type === "summary");
   const notes = content.filter(c => c.content_type === "notes");
@@ -222,9 +268,7 @@ function SummaryTab({ content }: { content: ContentItem[] }) {
     <div className="space-y-4">
       {summaries.map(item => (
         <Card key={item.id} className="border-border/50">
-          <CardHeader>
-            <CardTitle className="font-display text-lg">{item.content?.title || "Summary"}</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="font-display text-lg">{item.content?.title || "Summary"}</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-foreground">{item.content?.summary}</p>
             {item.content?.key_points && (
@@ -251,12 +295,9 @@ function SummaryTab({ content }: { content: ContentItem[] }) {
           </CardContent>
         </Card>
       ))}
-
       {notes.map(item => (
         <Card key={item.id} className="border-border/50">
-          <CardHeader>
-            <CardTitle className="font-display text-lg">{item.content?.title || "Study Notes"}</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="font-display text-lg">{item.content?.title || "Study Notes"}</CardTitle></CardHeader>
           <CardContent>
             {item.content?.sections?.map((section: any, j: number) => (
               <div key={j} className="mb-4">
@@ -272,12 +313,9 @@ function SummaryTab({ content }: { content: ContentItem[] }) {
           </CardContent>
         </Card>
       ))}
-
       {guides.map(item => (
         <Card key={item.id} className="border-border/50">
-          <CardHeader>
-            <CardTitle className="font-display text-lg">{item.content?.title || "Study Guide"}</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="font-display text-lg">{item.content?.title || "Study Guide"}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             {item.content?.learning_objectives && (
               <div>
@@ -303,7 +341,6 @@ function SummaryTab({ content }: { content: ContentItem[] }) {
 }
 
 /* ─── Flashcards Tab ─── */
-
 function FlashcardsTab({ flashcards, onUpdate }: { flashcards: Flashcard[]; onUpdate: (id: string, m: boolean) => void }) {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -325,7 +362,6 @@ function FlashcardsTab({ flashcards, onUpdate }: { flashcards: Flashcard[]; onUp
         <Button variant={filter === "all" ? "default" : "outline"} size="sm" onClick={() => { setFilter("all"); setIndex(0); setFlipped(false); }}>All ({flashcards.length})</Button>
         <Button variant={filter === "unmastered" ? "default" : "outline"} size="sm" onClick={() => { setFilter("unmastered"); setIndex(0); setFlipped(false); }}>To Review ({flashcards.filter(c => !c.mastered).length})</Button>
       </div>
-
       {filtered.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">All mastered! 🎉</p>
       ) : (
@@ -356,7 +392,6 @@ function FlashcardsTab({ flashcards, onUpdate }: { flashcards: Flashcard[]; onUp
 }
 
 /* ─── Quiz Tab ─── */
-
 function QuizTab({ questions, user }: { questions: QuizQuestion[]; user: any }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -387,7 +422,6 @@ function QuizTab({ questions, user }: { questions: QuizQuestion[]; user: any }) 
         <p className="text-sm text-muted-foreground">Question {currentIndex + 1} of {questions.length}</p>
         {score.total > 0 && <Badge variant="outline">Score: {score.correct}/{score.total}</Badge>}
       </div>
-
       {current && (
         <motion.div key={current.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
           <Card className="border-border/50">
@@ -410,7 +444,6 @@ function QuizTab({ questions, user }: { questions: QuizQuestion[]; user: any }) 
                   ))}
                 </RadioGroup>
               )}
-
               {current.question_type === "true_false" && (
                 <RadioGroup value={answers[current.id] || ""} onValueChange={v => setAnswers(p => ({ ...p, [current.id]: v }))} disabled={!!showResult[current.id]}>
                   {["True", "False"].map(opt => (
@@ -425,11 +458,9 @@ function QuizTab({ questions, user }: { questions: QuizQuestion[]; user: any }) 
                   ))}
                 </RadioGroup>
               )}
-
               {current.question_type === "short_answer" && (
                 <Input placeholder="Type your answer..." value={answers[current.id] || ""} onChange={e => setAnswers(p => ({ ...p, [current.id]: e.target.value }))} disabled={!!showResult[current.id]} />
               )}
-
               {showResult[current.id] && (
                 <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-lg bg-muted">
                   <p className="text-sm font-medium text-foreground flex items-center gap-1 mb-1">
@@ -440,7 +471,6 @@ function QuizTab({ questions, user }: { questions: QuizQuestion[]; user: any }) 
                   {current.explanation && <p className="text-sm text-muted-foreground">{current.explanation}</p>}
                 </motion.div>
               )}
-
               <div className="flex justify-between pt-2">
                 {!showResult[current.id] ? (
                   <Button onClick={() => checkAnswer(current.id)} disabled={!answers[current.id]}>Check Answer</Button>
