@@ -25,6 +25,7 @@ interface Upload { id: string; file_name: string; created_at: string; }
 interface ContentItem { id: string; content_type: string; content: any; upload_id: string; }
 interface Flashcard { id: string; question: string; answer: string; difficulty: string; mastered: boolean; upload_id: string; }
 interface QuizQuestion { id: string; question_type: string; question: string; options: string[] | null; correct_answer: string; explanation: string | null; upload_id: string; }
+interface QuizAttempt { id: string; question_id: string; upload_id: string; is_correct: boolean; }
 
 export default function TopicsPage() {
   const { user } = useAuth();
@@ -32,6 +33,7 @@ export default function TopicsPage() {
   const [content, setContent] = useState<ContentItem[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUpload, setSelectedUpload] = useState<Upload | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,16 +42,18 @@ export default function TopicsPage() {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const [u, c, f, q] = await Promise.all([
+      const [u, c, f, q, a] = await Promise.all([
         supabase.from("uploads").select("id, file_name, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("generated_content").select("id, content_type, content, upload_id").eq("user_id", user.id),
         supabase.from("flashcards").select("*").eq("user_id", user.id),
         supabase.from("quiz_questions").select("*").eq("user_id", user.id),
+        supabase.from("quiz_attempts").select("id, question_id, upload_id, is_correct").eq("user_id", user.id),
       ]);
       setUploads((u.data as Upload[]) || []);
       setContent((c.data as ContentItem[]) || []);
       setFlashcards((f.data as Flashcard[]) || []);
       setQuestions((q.data as QuizQuestion[]) || []);
+      setAttempts((a.data as QuizAttempt[]) || []);
       setLoading(false);
     };
     load();
@@ -141,20 +145,24 @@ export default function TopicsPage() {
       ) : (
         <div className="grid gap-3">
           {filtered.map((upload, i) => {
-            const fcCount = flashcards.filter(f => f.upload_id === upload.id).length;
+            const topicFc = flashcards.filter(f => f.upload_id === upload.id);
+            const fcCount = topicFc.length;
+            const masteredCount = topicFc.filter(f => f.mastered).length;
             const qCount = questions.filter(q => q.upload_id === upload.id).length;
             const summaryCount = content.filter(c => c.upload_id === upload.id && c.content_type === "summary").length;
             const hasContent = summaryCount > 0 || fcCount > 0 || qCount > 0;
+            const topicAttempts = attempts.filter(a => a.upload_id === upload.id);
+            const correctAttempts = topicAttempts.filter(a => a.is_correct).length;
 
             return (
               <motion.div key={upload.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
                 <Card className="border-border/50 cursor-pointer hover:border-primary/30 hover:shadow-md transition-all" onClick={() => setSelectedUpload(upload)}>
                   <CardContent className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <FileText className="w-5 h-5 text-primary" />
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium text-foreground truncate">{upload.file_name}</p>
                         <div className="flex gap-2 mt-1 flex-wrap">
                           {summaryCount > 0 && <Badge variant="secondary" className="text-xs">Summary</Badge>}
@@ -162,6 +170,25 @@ export default function TopicsPage() {
                           {qCount > 0 && <Badge variant="secondary" className="text-xs">{qCount} Quiz Q's</Badge>}
                           {!hasContent && <span className="text-xs text-muted-foreground">Processing...</span>}
                         </div>
+                        {/* Progress indicators */}
+                        {hasContent && (
+                          <div className="flex gap-4 mt-2">
+                            {fcCount > 0 && (
+                              <div className="flex items-center gap-1.5">
+                                <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
+                                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(masteredCount / fcCount) * 100}%` }} />
+                                </div>
+                                <span className="text-xs text-muted-foreground">{masteredCount}/{fcCount} mastered</span>
+                              </div>
+                            )}
+                            {topicAttempts.length > 0 && (
+                              <div className="flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                                <span className="text-xs text-muted-foreground">Quiz: {correctAttempts}/{topicAttempts.length}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
