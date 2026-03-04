@@ -25,6 +25,7 @@ interface Upload { id: string; file_name: string; created_at: string; }
 interface ContentItem { id: string; content_type: string; content: any; upload_id: string; }
 interface Flashcard { id: string; question: string; answer: string; difficulty: string; mastered: boolean; upload_id: string; }
 interface QuizQuestion { id: string; question_type: string; question: string; options: string[] | null; correct_answer: string; explanation: string | null; upload_id: string; }
+interface QuizAttempt { id: string; question_id: string; upload_id: string; is_correct: boolean; }
 
 export default function TopicsPage() {
   const { user } = useAuth();
@@ -32,6 +33,7 @@ export default function TopicsPage() {
   const [content, setContent] = useState<ContentItem[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUpload, setSelectedUpload] = useState<Upload | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,16 +42,18 @@ export default function TopicsPage() {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const [u, c, f, q] = await Promise.all([
+      const [u, c, f, q, a] = await Promise.all([
         supabase.from("uploads").select("id, file_name, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("generated_content").select("id, content_type, content, upload_id").eq("user_id", user.id),
         supabase.from("flashcards").select("*").eq("user_id", user.id),
         supabase.from("quiz_questions").select("*").eq("user_id", user.id),
+        supabase.from("quiz_attempts").select("id, question_id, upload_id, is_correct").eq("user_id", user.id),
       ]);
       setUploads((u.data as Upload[]) || []);
       setContent((c.data as ContentItem[]) || []);
       setFlashcards((f.data as Flashcard[]) || []);
       setQuestions((q.data as QuizQuestion[]) || []);
+      setAttempts((a.data as QuizAttempt[]) || []);
       setLoading(false);
     };
     load();
