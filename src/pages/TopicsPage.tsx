@@ -419,13 +419,64 @@ function FlashcardsTab({ flashcards, onUpdate }: { flashcards: Flashcard[]; onUp
 }
 
 /* ─── Quiz Tab ─── */
+function shuffleArray<T>(arr: T[]): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 function QuizTab({ questions, user }: { questions: QuizQuestion[]; user: any }) {
+  const [shuffledQuestions, setShuffledQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showResult, setShowResult] = useState<Record<string, boolean>>({});
   const [score, setScore] = useState({ correct: 0, total: 0 });
+  const [quizComplete, setQuizComplete] = useState(false);
+  const [attemptHistory, setAttemptHistory] = useState<{ score: number; total: number; date: string }[]>([]);
+  const [attemptNumber, setAttemptNumber] = useState(1);
 
-  const current = questions[currentIndex];
+  useEffect(() => {
+    setShuffledQuestions(shuffleArray(questions));
+  }, [questions]);
+
+  // Load past attempt history for this topic
+  useEffect(() => {
+    if (!user || questions.length === 0) return;
+    const loadHistory = async () => {
+      const uploadId = questions[0]?.upload_id;
+      if (!uploadId) return;
+      const { data } = await supabase
+        .from("quiz_attempts")
+        .select("is_correct, created_at")
+        .eq("user_id", user.id)
+        .eq("upload_id", uploadId)
+        .order("created_at", { ascending: true });
+      if (!data || data.length === 0) return;
+      // Group attempts into sessions (gap > 60s = new session)
+      const sessions: { score: number; total: number; date: string }[] = [];
+      let lastTime = new Date(data[0].created_at).getTime();
+      let currentSession = { score: data[0].is_correct ? 1 : 0, total: 1, date: data[0].created_at };
+      for (let i = 1; i < data.length; i++) {
+        const t = new Date(data[i].created_at).getTime();
+        if (t - lastTime > 60000) {
+          sessions.push(currentSession);
+          currentSession = { score: 0, total: 0, date: data[i].created_at };
+        }
+        currentSession.total++;
+        if (data[i].is_correct) currentSession.score++;
+        lastTime = t;
+      }
+      sessions.push(currentSession);
+      setAttemptHistory(sessions);
+      setAttemptNumber(sessions.length + 1);
+    };
+    loadHistory();
+  }, [user, questions]);
+
+  const current = shuffledQuestions[currentIndex];
 
   const checkAnswer = async (qId: string) => {
     const answer = answers[qId]?.toLowerCase().trim();
@@ -439,14 +490,80 @@ function QuizTab({ questions, user }: { questions: QuizQuestion[]; user: any }) 
         upload_id: current.upload_id, selected_answer: answers[qId], is_correct: isCorrect,
       });
     }
+    // Check if quiz is complete
+    if (currentIndex === shuffledQuestions.length - 1) {
+      setTimeout(() => setQuizComplete(true), 600);
+    }
+  };
+
+  const retakeQuiz = () => {
+    setAttemptHistory(prev => [...prev, { score: score.correct, total: score.total, date: new Date().toISOString() }]);
+    setAttemptNumber(n => n + 1);
+    setShuffledQuestions(shuffleArray(questions));
+    setCurrentIndex(0);
+    setAnswers({});
+    setShowResult({});
+    setScore({ correct: 0, total: 0 });
+    setQuizComplete(false);
   };
 
   if (questions.length === 0) return <EmptyState text="No quiz questions for this topic yet." />;
 
+  if (quizComplete) {
+    const pct = Math.round((score.correct / score.total) * 100);
+    const prevBest = attemptHistory.length > 0 ? Math.max(...attemptHistory.map(a => Math.round((a.score / a.total) * 100))) : null;
+    const improved = prevBest !== null && pct > prevBest;
+
+    return (
+      <div className="max-w-md mx-auto text-center space-y-6 py-8">
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+          <div className="w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-4" style={{ background: pct >= 70 ? 'hsl(var(--primary) / 0.15)' : 'hsl(var(--destructive) / 0.15)' }}>
+            {pct >= 70 ? <CheckCircle2 className="w-10 h-10 text-primary" /> : <XCircle className="w-10 h-10 text-destructive" />}
+          </div>
+          <h2 className="text-2xl font-display font-bold text-foreground">Quiz Complete!</h2>
+          <p className="text-3xl font-bold text-primary mt-2">{pct}%</p>
+          <p className="text-muted-foreground">{score.correct} of {score.total} correct · Attempt #{attemptNumber}</p>
+          {improved && <Badge className="bg-primary/10 text-primary border-primary/20 mt-2">🎉 New personal best!</Badge>}
+          {prevBest !== null && !improved && <p className="text-xs text-muted-foreground">Previous best: {prevBest}%</p>}
+        </motion.div>
+
+        {attemptHistory.length > 0 && (
+          <Card className="border-border/50 text-left">
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Attempt History</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              {attemptHistory.map((a, i) => {
+                const aPct = Math.round((a.score / a.total) * 100);
+                return (
+                  <div key={i} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Attempt #{i + 1}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
+                        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${aPct}%` }} />
+                      </div>
+                      <span className="font-medium text-foreground w-10 text-right">{aPct}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="flex items-center justify-between text-sm font-medium">
+                <span className="text-primary">Attempt #{attemptNumber} (current)</span>
+                <span className="text-primary">{pct}%</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Button onClick={retakeQuiz} className="gap-2">
+          <HelpCircle className="w-4 h-4" /> Retake Quiz (Shuffled)
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">Question {currentIndex + 1} of {questions.length}</p>
+        <p className="text-sm text-muted-foreground">Question {currentIndex + 1} of {shuffledQuestions.length} · Attempt #{attemptNumber}</p>
         {score.total > 0 && <Badge variant="outline">Score: {score.correct}/{score.total}</Badge>}
       </div>
       {current && (
@@ -501,8 +618,10 @@ function QuizTab({ questions, user }: { questions: QuizQuestion[]; user: any }) 
               <div className="flex justify-between pt-2">
                 {!showResult[current.id] ? (
                   <Button onClick={() => checkAnswer(current.id)} disabled={!answers[current.id]}>Check Answer</Button>
+                ) : currentIndex < shuffledQuestions.length - 1 ? (
+                  <Button onClick={() => setCurrentIndex(i => i + 1)}>Next Question →</Button>
                 ) : (
-                  <Button onClick={() => setCurrentIndex(i => Math.min(i + 1, questions.length - 1))} disabled={currentIndex >= questions.length - 1}>Next Question →</Button>
+                  <Button onClick={() => setQuizComplete(true)}>View Results</Button>
                 )}
               </div>
             </CardContent>
