@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/upload", icon: Upload, label: "Upload Slides" },
   { to: "/topics", icon: BookOpen, label: "My Topics" },
   { to: "/performance", icon: TrendingUp, label: "Performance" },
