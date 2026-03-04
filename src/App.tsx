@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
+import LandingPage from "@/pages/LandingPage";
 import AuthPage from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import UploadPage from "@/pages/UploadPage";
@@ -27,8 +28,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AuthRoute() {
   const { user, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/dashboard" replace />;
   return <AuthPage />;
+}
+
+function LandingRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  if (user) return <Navigate to="/dashboard" replace />;
+  return <LandingPage />;
 }
 
 const App = () => (
@@ -39,8 +47,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            <Route path="/" element={<LandingRoute />} />
             <Route path="/auth" element={<AuthRoute />} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/upload" element={<ProtectedRoute><UploadPage /></ProtectedRoute>} />
             <Route path="/topics" element={<ProtectedRoute><TopicsPage /></ProtectedRoute>} />
             <Route path="/summaries" element={<ProtectedRoute><TopicsPage /></ProtectedRoute>} />
