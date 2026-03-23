@@ -11,6 +11,7 @@ import Dashboard from "@/pages/Dashboard";
 import UploadPage from "@/pages/UploadPage";
 import TopicsPage from "@/pages/TopicsPage";
 import ChatPage from "@/pages/ChatPage";
+import AITeacherPage from "@/pages/AITeacherPage";
 import PerformancePage from "@/pages/PerformancePage";
 import TimetablePage from "@/pages/TimetablePage";
 import NotFound from "@/pages/NotFound";
