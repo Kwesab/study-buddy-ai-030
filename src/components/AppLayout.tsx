@@ -25,6 +25,7 @@ const navItems = [
   { to: "/performance", icon: TrendingUp, label: "Performance" },
   { to: "/timetable", icon: CalendarDays, label: "Timetable" },
   { to: "/chat", icon: MessageSquare, label: "AI Tutor" },
+  { to: "/ai-teacher", icon: GraduationCap, label: "AI Teacher" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
