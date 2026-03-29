@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.ai-teach]
 verify_jwt = false
+
+[functions.paystack-subscribe]
+verify_jwt = false
+
+[functions.paystack-webhook]
+verify_jwt = false

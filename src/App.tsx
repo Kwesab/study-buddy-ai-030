@@ -10,10 +10,12 @@ import AuthPage from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import UploadPage from "@/pages/UploadPage";
 import TopicsPage from "@/pages/TopicsPage";
-import ChatPage from "@/pages/ChatPage";
-import AITeacherPage from "@/pages/AITeacherPage";
+import AILearningPage from "@/pages/AILearningPage";
 import PerformancePage from "@/pages/PerformancePage";
 import TimetablePage from "@/pages/TimetablePage";
+import ProfilePage from "@/pages/ProfilePage";
+import PricingPage from "@/pages/PricingPage";
+import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -58,8 +60,13 @@ const App = () => (
             <Route path="/quiz" element={<ProtectedRoute><TopicsPage /></ProtectedRoute>} />
             <Route path="/performance" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
             <Route path="/timetable" element={<ProtectedRoute><TimetablePage /></ProtectedRoute>} />
-            <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-            <Route path="/ai-teacher" element={<ProtectedRoute><AITeacherPage /></ProtectedRoute>} />
+            <Route path="/ai-learning" element={<ProtectedRoute><AILearningPage /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/pricing" element={<ProtectedRoute><PricingPage /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+            {/* Legacy routes */}
+            <Route path="/chat" element={<Navigate to="/ai-learning" replace />} />
+            <Route path="/ai-teacher" element={<Navigate to="/ai-learning" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
