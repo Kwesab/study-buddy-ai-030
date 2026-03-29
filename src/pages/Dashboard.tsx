@@ -25,6 +25,10 @@ interface Announcement {
 export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState<Stats>({ uploads: 0, summaries: 0, flashcards: 0, quizzes: 0 });
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [dismissedAnnouncements, setDismissedAnnouncements] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("dismissed_announcements") || "[]")); } catch { return new Set(); }
+  });
 
   useEffect(() => {
     if (!user) return;
