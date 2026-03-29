@@ -88,11 +88,11 @@ export default function Dashboard() {
                 <p className="text-xs text-muted-foreground">PDF files supported</p>
               </div>
             </Link>
-            <Link to="/chat" className="flex items-center gap-3 p-3 rounded-lg bg-muted hover:bg-accent/10 transition-colors">
+            <Link to="/ai-learning" className="flex items-center gap-3 p-3 rounded-lg bg-muted hover:bg-accent/10 transition-colors">
               <Sparkles className="w-5 h-5 text-accent" />
               <div>
-                <p className="font-medium text-sm text-foreground">Ask AI Tutor</p>
-                <p className="text-xs text-muted-foreground">Get help with any topic</p>
+                <p className="font-medium text-sm text-foreground">AI Learning Hub</p>
+                <p className="text-xs text-muted-foreground">Chat tutor & structured lessons</p>
               </div>
             </Link>
           </CardContent>

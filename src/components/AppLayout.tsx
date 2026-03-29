@@ -1,19 +1,10 @@
 import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 import {
-  LayoutDashboard,
-  Upload,
-  BookOpen,
-  MessageSquare,
-  LogOut,
-  GraduationCap,
-  Menu,
-  X,
-  CalendarDays,
-  TrendingUp,
-  Moon,
-  Sun,
+  LayoutDashboard, Upload, BookOpen, Brain, LogOut, GraduationCap,
+  Menu, X, CalendarDays, TrendingUp, Moon, Sun, User, CreditCard, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,12 +15,14 @@ const navItems = [
   { to: "/topics", icon: BookOpen, label: "My Topics" },
   { to: "/performance", icon: TrendingUp, label: "Performance" },
   { to: "/timetable", icon: CalendarDays, label: "Timetable" },
-  { to: "/chat", icon: MessageSquare, label: "AI Tutor" },
-  { to: "/ai-teacher", icon: GraduationCap, label: "AI Teacher" },
+  { to: "/ai-learning", icon: Brain, label: "AI Learning" },
+  { to: "/profile", icon: User, label: "My Profile" },
+  { to: "/pricing", icon: CreditCard, label: "Pricing" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { signOut, user } = useAuth();
+  const { isAdmin } = useAdmin();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
@@ -38,6 +31,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     document.documentElement.classList.toggle("dark", dark);
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
+
+  const allNavItems = isAdmin
+    ? [...navItems, { to: "/admin", icon: ShieldCheck, label: "Admin" }]
+    : navItems;
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -54,7 +51,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 space-y-1">
-          {navItems.map((item) => (
+          {allNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -101,7 +98,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="lg:hidden fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" onClick={() => setMobileOpen(false)}>
           <div className="bg-card w-64 h-full p-4 pt-16 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <nav className="space-y-1">
-              {navItems.map((item) => (
+              {allNavItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
