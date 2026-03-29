@@ -2,15 +2,24 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, BookOpen, CreditCard, HelpCircle, Sparkles, TrendingUp, CalendarDays } from "lucide-react";
+import { Upload, BookOpen, CreditCard, HelpCircle, Sparkles, TrendingUp, CalendarDays, Megaphone, X, AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 interface Stats {
   uploads: number;
   summaries: number;
   flashcards: number;
   quizzes: number;
+}
+
+interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  created_at: string;
 }
 
 export default function Dashboard() {
