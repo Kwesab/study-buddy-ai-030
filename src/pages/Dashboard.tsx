@@ -37,13 +37,15 @@ export default function Dashboard() {
       supabase.from("generated_content").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("quiz_questions").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-    ]).then(([u, s, f, q]) => {
+      supabase.from("platform_announcements").select("id, title, message, type, created_at").eq("is_active", true).order("created_at", { ascending: false }).limit(5),
+    ]).then(([u, s, f, q, ann]) => {
       setStats({
         uploads: u.count ?? 0,
         summaries: s.count ?? 0,
         flashcards: f.count ?? 0,
         quizzes: q.count ?? 0,
       });
+      setAnnouncements((ann.data as Announcement[]) || []);
     });
   }, [user]);
 
