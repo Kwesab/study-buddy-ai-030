@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, BookOpen, CreditCard, HelpCircle, Sparkles, TrendingUp, CalendarDays } from "lucide-react";
+import { Upload, BookOpen, CreditCard, HelpCircle, Sparkles, TrendingUp, CalendarDays, Megaphone, X, AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 interface Stats {
   uploads: number;
@@ -13,9 +14,21 @@ interface Stats {
   quizzes: number;
 }
 
+interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  created_at: string;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState<Stats>({ uploads: 0, summaries: 0, flashcards: 0, quizzes: 0 });
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [dismissedAnnouncements, setDismissedAnnouncements] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("dismissed_announcements") || "[]")); } catch { return new Set(); }
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -24,13 +37,15 @@ export default function Dashboard() {
       supabase.from("generated_content").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("quiz_questions").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-    ]).then(([u, s, f, q]) => {
+      supabase.from("platform_announcements").select("id, title, message, type, created_at").eq("is_active", true).order("created_at", { ascending: false }).limit(5),
+    ]).then(([u, s, f, q, ann]) => {
       setStats({
         uploads: u.count ?? 0,
         summaries: s.count ?? 0,
         flashcards: f.count ?? 0,
         quizzes: q.count ?? 0,
       });
+      setAnnouncements((ann.data as Announcement[]) || []);
     });
   }, [user]);
 
@@ -43,8 +58,48 @@ export default function Dashboard() {
     { title: "Timetable", value: null, icon: CalendarDays, to: "/timetable", color: "text-primary" },
   ];
 
+  const dismissAnnouncement = (id: string) => {
+    const updated = new Set(dismissedAnnouncements);
+    updated.add(id);
+    setDismissedAnnouncements(updated);
+    localStorage.setItem("dismissed_announcements", JSON.stringify([...updated]));
+  };
+
+  const visibleAnnouncements = announcements.filter(a => !dismissedAnnouncements.has(a.id));
+
+  const announcementIcon = (type: string) => {
+    if (type === "warning" || type === "urgent") return <AlertTriangle className="w-4 h-4 shrink-0" />;
+    if (type === "success") return <CheckCircle2 className="w-4 h-4 shrink-0" />;
+    return <Info className="w-4 h-4 shrink-0" />;
+  };
+
+  const announcementColor = (type: string) => {
+    if (type === "urgent") return "border-destructive/30 bg-destructive/5 text-destructive";
+    if (type === "warning") return "border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-400";
+    if (type === "success") return "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400";
+    return "border-primary/30 bg-primary/5 text-primary";
+  };
+
   return (
     <div className="space-y-8">
+      {/* Announcements */}
+      <AnimatePresence>
+        {visibleAnnouncements.map(a => (
+          <motion.div key={a.id} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}>
+            <div className={`flex items-start gap-3 p-3 rounded-lg border ${announcementColor(a.type)}`}>
+              {announcementIcon(a.type)}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">{a.title}</p>
+                <p className="text-xs opacity-80 mt-0.5">{a.message}</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-50 hover:opacity-100" onClick={() => dismissAnnouncement(a.id)}>
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
       <div>
         <h1 className="text-3xl font-display font-bold text-foreground">
           Welcome back! <Sparkles className="w-7 h-7 inline text-primary" />
