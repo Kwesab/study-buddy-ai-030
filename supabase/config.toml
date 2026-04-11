@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.paystack-webhook]
 verify_jwt = false
+
+[functions.analyze-past-questions]
+verify_jwt = false

@@ -11,6 +11,7 @@ import Dashboard from "@/pages/Dashboard";
 import UploadPage from "@/pages/UploadPage";
 import TopicsPage from "@/pages/TopicsPage";
 import AILearningPage from "@/pages/AILearningPage";
+import PastQuestionsPage from "@/pages/PastQuestionsPage";
 import PerformancePage from "@/pages/PerformancePage";
 import TimetablePage from "@/pages/TimetablePage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/quiz" element={<ProtectedRoute><TopicsPage /></ProtectedRoute>} />
             <Route path="/performance" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
             <Route path="/timetable" element={<ProtectedRoute><TimetablePage /></ProtectedRoute>} />
+            <Route path="/past-questions" element={<ProtectedRoute><PastQuestionsPage /></ProtectedRoute>} />
             <Route path="/ai-learning" element={<ProtectedRoute><AILearningPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/pricing" element={<ProtectedRoute><PricingPage /></ProtectedRoute>} />
