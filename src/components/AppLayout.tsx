@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
 import {
   LayoutDashboard, Upload, BookOpen, Brain, LogOut, GraduationCap,
-  Menu, X, CalendarDays, TrendingUp, Moon, Sun, User, CreditCard, ShieldCheck,
+  Menu, X, CalendarDays, TrendingUp, Moon, Sun, User, CreditCard, ShieldCheck, FileQuestion,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ const navItems = [
   { to: "/topics", icon: BookOpen, label: "My Topics" },
   { to: "/performance", icon: TrendingUp, label: "Performance" },
   { to: "/timetable", icon: CalendarDays, label: "Timetable" },
+  { to: "/past-questions", icon: FileQuestion, label: "Past Questions" },
   { to: "/ai-learning", icon: Brain, label: "AI Learning" },
   { to: "/profile", icon: User, label: "My Profile" },
   { to: "/pricing", icon: CreditCard, label: "Pricing" },
