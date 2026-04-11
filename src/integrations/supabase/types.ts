@@ -176,6 +176,51 @@ export type Database = {
           },
         ]
       }
+      past_questions: {
+        Row: {
+          answers: Json | null
+          created_at: string
+          extracted_text: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          id: string
+          status: string
+          study_notes: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          created_at?: string
+          extracted_text?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type: string
+          id?: string
+          status?: string
+          study_notes?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          created_at?: string
+          extracted_text?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          status?: string
+          study_notes?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_announcements: {
         Row: {
           admin_id: string
