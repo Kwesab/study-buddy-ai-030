@@ -25,7 +25,9 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
 
-    const { uploadId, action, slideText } = await req.json();
+    const { uploadId, action, slideText, difficulty } = await req.json();
+    const difficultyLevel: "easy" | "medium" | "hard" =
+      difficulty === "easy" || difficulty === "hard" ? difficulty : "medium";
 
     const beginnerNote = `IMPORTANT: Write everything at a BEGINNER level. Use simple, everyday language that a first-year student with no prior knowledge can understand. Avoid jargon — if you must use a technical term, immediately explain it in plain English with a relatable analogy or example. Keep sentences short and clear.`;
 
@@ -50,7 +52,12 @@ Lecture content:
 ${slideText}`,
       quiz: `You are a friendly tutor writing a practice quiz for a complete beginner. ${beginnerNote}
 
-Generate exam-style questions from this lecture. Include 5 MCQ, 3 True/False, and 2 short answer questions. Make questions straightforward. Every explanation should teach the concept in simple terms with an example. Return JSON: {"questions": [{"type": "mcq|true_false|short_answer", "question": "...", "options": ["..."] or null, "correct_answer": "...", "explanation": "..."}]}
+Generate exam-style questions at **${difficultyLevel.toUpperCase()}** difficulty from this lecture.
+- easy = recall and definitions, gentle wording.
+- medium = applied understanding, light reasoning.
+- hard = multi-step reasoning, edge cases, synthesis across concepts.
+
+Include 5 MCQ, 3 True/False, and 2 short answer questions. Every explanation should teach the concept in simple terms with an example. Return JSON: {"questions": [{"type": "mcq|true_false|short_answer", "question": "...", "options": ["..."] or null, "correct_answer": "...", "explanation": "..."}]}
 
 Lecture content:
 ${slideText}`,
