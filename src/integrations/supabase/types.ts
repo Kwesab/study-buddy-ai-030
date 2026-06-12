@@ -105,9 +105,13 @@ export type Database = {
           answer: string
           created_at: string
           difficulty: string | null
+          easiness: number
           id: string
+          interval: number
           mastered: boolean | null
+          next_review_date: string
           question: string
+          repetitions: number
           upload_id: string
           user_id: string
         }
@@ -115,9 +119,13 @@ export type Database = {
           answer: string
           created_at?: string
           difficulty?: string | null
+          easiness?: number
           id?: string
+          interval?: number
           mastered?: boolean | null
+          next_review_date?: string
           question: string
+          repetitions?: number
           upload_id: string
           user_id: string
         }
@@ -125,9 +133,13 @@ export type Database = {
           answer?: string
           created_at?: string
           difficulty?: string | null
+          easiness?: number
           id?: string
+          interval?: number
           mastered?: boolean | null
+          next_review_date?: string
           question?: string
+          repetitions?: number
           upload_id?: string
           user_id?: string
         }
@@ -403,6 +415,41 @@ export type Database = {
         }
         Relationships: []
       }
+      study_sessions: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          session_type: string
+          upload_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes: number
+          id?: string
+          session_type?: string
+          upload_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          session_type?: string
+          upload_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -484,6 +531,7 @@ export type Database = {
       uploads: {
         Row: {
           created_at: string
+          difficulty_level: string
           file_name: string
           file_path: string
           file_size: number | null
@@ -494,6 +542,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          difficulty_level?: string
           file_name: string
           file_path: string
           file_size?: number | null
@@ -504,6 +553,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          difficulty_level?: string
           file_name?: string
           file_path?: string
           file_size?: number | null

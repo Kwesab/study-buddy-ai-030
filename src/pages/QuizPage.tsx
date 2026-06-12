@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { HelpCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { PomodoroTimer } from "@/components/PomodoroTimer";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -62,11 +63,11 @@ export default function QuizPage() {
     const isCorrect = answer === correct;
     
     setShowResult(prev => ({ ...prev, [qId]: true }));
-    if (isCorrect) {
-      setScore(prev => ({ ...prev, correct: prev.correct + 1, total: prev.total + 1 }));
-    } else {
-      setScore(prev => ({ ...prev, total: prev.total + 1 }));
-    }
+    const newScore = {
+      correct: score.correct + (isCorrect ? 1 : 0),
+      total: score.total + 1,
+    };
+    setScore(newScore);
 
     // Track attempt
     if (user) {
@@ -77,6 +78,18 @@ export default function QuizPage() {
         selected_answer: answers[qId],
         is_correct: isCorrect,
       });
+
+      // Adaptive difficulty: update the topic's difficulty_level based on running accuracy
+      const uploadId = (current as any).upload_id as string | undefined;
+      if (uploadId && newScore.total >= 3) {
+        const accuracy = newScore.correct / newScore.total;
+        const nextDifficulty =
+          accuracy >= 0.8 ? "hard" : accuracy >= 0.5 ? "medium" : "easy";
+        await supabase
+          .from("uploads")
+          .update({ difficulty_level: nextDifficulty })
+          .eq("id", uploadId);
+      }
     }
   };
 
@@ -109,6 +122,7 @@ export default function QuizPage() {
         </div>
       ) : current && (
         <div className="max-w-2xl mx-auto space-y-4">
+          <PomodoroTimer uploadId={(current as any).upload_id ?? null} />
           <p className="text-sm text-muted-foreground text-center">Question {currentIndex + 1} of {questions.length}</p>
 
           <motion.div key={current.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>

@@ -81,7 +81,12 @@ export async function streamChat({
   onDone();
 }
 
-export async function analyzeSlides(uploadId: string, action: string, slideText: string) {
+export async function analyzeSlides(
+  uploadId: string,
+  action: string,
+  slideText: string,
+  difficulty?: "easy" | "medium" | "hard",
+) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Not authenticated");
 
@@ -92,7 +97,7 @@ export async function analyzeSlides(uploadId: string, action: string, slideText:
       Authorization: `Bearer ${session.access_token}`,
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
-    body: JSON.stringify({ uploadId, action, slideText }),
+    body: JSON.stringify({ uploadId, action, slideText, difficulty }),
   });
 
   const data = await resp.json();
