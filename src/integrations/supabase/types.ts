@@ -100,6 +100,65 @@ export type Database = {
           },
         ]
       }
+      concept_maps: {
+        Row: {
+          edges: Json
+          generated_at: string
+          id: string
+          nodes: Json
+          upload_id: string
+          user_id: string
+        }
+        Insert: {
+          edges: Json
+          generated_at?: string
+          id?: string
+          nodes: Json
+          upload_id: string
+          user_id: string
+        }
+        Update: {
+          edges?: Json
+          generated_at?: string
+          id?: string
+          nodes?: Json
+          upload_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concept_maps_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: true
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_predictions: {
+        Row: {
+          generated_at: string
+          id: string
+          predictions: Json
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          generated_at?: string
+          id?: string
+          predictions: Json
+          subject: string
+          user_id: string
+        }
+        Update: {
+          generated_at?: string
+          id?: string
+          predictions?: Json
+          subject?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       flashcards: {
         Row: {
           answer: string
@@ -581,6 +640,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_recommendations: {
+        Row: {
+          cached_at: string
+          channel_name: string | null
+          duration: string | null
+          id: string
+          reason: string | null
+          relevance_score: number
+          thumbnail: string | null
+          title: string
+          upload_id: string
+          user_id: string
+          video_id: string
+          watched: boolean
+        }
+        Insert: {
+          cached_at?: string
+          channel_name?: string | null
+          duration?: string | null
+          id?: string
+          reason?: string | null
+          relevance_score?: number
+          thumbnail?: string | null
+          title: string
+          upload_id: string
+          user_id: string
+          video_id: string
+          watched?: boolean
+        }
+        Update: {
+          cached_at?: string
+          channel_name?: string | null
+          duration?: string | null
+          id?: string
+          reason?: string | null
+          relevance_score?: number
+          thumbnail?: string | null
+          title?: string
+          upload_id?: string
+          user_id?: string
+          video_id?: string
+          watched?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_recommendations_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

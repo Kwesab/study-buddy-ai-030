@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   BookOpen, CreditCard, HelpCircle, Loader2, ArrowLeft,
-  FileText, CheckCircle2, XCircle, Check, ChevronRight, Search, Trash2,
+  FileText, CheckCircle2, XCircle, Check, ChevronRight, Search, Trash2, Youtube,
 } from "lucide-react";
+import { VideosTab } from "@/components/topics/VideosTab";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -272,10 +273,12 @@ function TopicDetail({
           <TabsTrigger value="summary"><BookOpen className="w-4 h-4 mr-1.5" /> Summary</TabsTrigger>
           <TabsTrigger value="flashcards"><CreditCard className="w-4 h-4 mr-1.5" /> Flashcards ({flashcards.length})</TabsTrigger>
           <TabsTrigger value="quiz"><HelpCircle className="w-4 h-4 mr-1.5" /> Quiz ({questions.length})</TabsTrigger>
+          <TabsTrigger value="videos"><Youtube className="w-4 h-4 mr-1.5" /> Videos</TabsTrigger>
         </TabsList>
         <TabsContent value="summary" className="mt-4 space-y-4"><SummaryTab content={content} /></TabsContent>
         <TabsContent value="flashcards" className="mt-4"><FlashcardsTab flashcards={flashcards} onUpdate={onFlashcardUpdate} /></TabsContent>
         <TabsContent value="quiz" className="mt-4"><QuizTab questions={questions} user={user} /></TabsContent>
+        <TabsContent value="videos" className="mt-4"><VideosTab uploadId={upload.id} /></TabsContent>
       </Tabs>
     </div>
   );
