@@ -582,6 +582,59 @@ export type Database = {
         }
         Relationships: []
       }
+      video_recommendations: {
+        Row: {
+          cached_at: string
+          channel_name: string | null
+          duration: string | null
+          id: string
+          reason: string | null
+          relevance_score: number
+          thumbnail: string | null
+          title: string
+          upload_id: string
+          user_id: string
+          video_id: string
+          watched: boolean
+        }
+        Insert: {
+          cached_at?: string
+          channel_name?: string | null
+          duration?: string | null
+          id?: string
+          reason?: string | null
+          relevance_score?: number
+          thumbnail?: string | null
+          title: string
+          upload_id: string
+          user_id: string
+          video_id: string
+          watched?: boolean
+        }
+        Update: {
+          cached_at?: string
+          channel_name?: string | null
+          duration?: string | null
+          id?: string
+          reason?: string | null
+          relevance_score?: number
+          thumbnail?: string | null
+          title?: string
+          upload_id?: string
+          user_id?: string
+          video_id?: string
+          watched?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_recommendations_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
