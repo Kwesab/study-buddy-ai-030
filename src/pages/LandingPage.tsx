@@ -65,7 +65,7 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row gap-4 mb-16">
             <Link to="/auth">
-              <Button size="lg" className="gap-2 h-13 px-8 py-4 text-base font-bold rounded-xl shadow-glow hover:shadow-[0_0_32px_hsl(var(--primary-glow)/0.45)] active:scale-95 transition-all">
+              <Button size="lg" className="gap-2 px-8 py-4 text-base font-bold rounded-xl shadow-glow hover:shadow-[0_0_32px_hsl(var(--primary-glow)/0.45)] active:scale-95 transition-all">
                 <Sparkles className="w-4 h-4" /> Start Studying Free
               </Button>
             </Link>
