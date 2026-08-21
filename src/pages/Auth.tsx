@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { GraduationCap, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 export default function AuthPage() {
   const [email, setEmail] = useState("");
@@ -52,9 +53,11 @@ export default function AuthPage() {
         className="w-full max-w-md relative"
       >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary mb-4 shadow-glow">
-            <GraduationCap className="w-8 h-8 text-primary-foreground" />
-          </div>
+          <img
+            src={logoAsset.url}
+            alt="AI Student Companion logo"
+            className="w-20 h-20 mx-auto mb-4 object-contain drop-shadow-[0_0_18px_hsl(var(--primary)/0.35)]"
+          />
           <h1 className="text-3xl font-bold font-display text-foreground">AI Student Companion</h1>
           <p className="text-muted-foreground mt-2 flex items-center justify-center gap-1">
             <Sparkles className="w-4 h-4" /> Your AI-powered study partner
