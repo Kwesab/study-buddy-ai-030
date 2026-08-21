@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -42,9 +43,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-card border-r border-border p-4 fixed h-full">
         <div className="flex items-center gap-3 mb-8 px-2">
-          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
-            <GraduationCap className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <img src={logoAsset.url} alt="AI Student Companion logo" className="w-10 h-10 object-contain" />
           <div>
             <h2 className="font-display font-bold text-foreground text-sm">AI Student</h2>
             <p className="text-xs text-muted-foreground">Companion</p>
@@ -84,9 +83,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-            <GraduationCap className="w-4 h-4 text-primary-foreground" />
-          </div>
+          <img src={logoAsset.url} alt="AI Student Companion logo" className="w-8 h-8 object-contain" />
           <span className="font-display font-bold text-sm text-foreground">AI Student Companion</span>
         </div>
         <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)}>

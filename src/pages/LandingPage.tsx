@@ -5,6 +5,7 @@ import {
   MessageSquare, TrendingUp, Sparkles, ArrowRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 const stats = [
   { value: "Instant", label: "Content generation" },
@@ -25,9 +26,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 w-full z-50 bg-background/70 backdrop-blur-xl border-b border-border/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
-              <GraduationCap className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img src={logoAsset.url} alt="AI Student Companion logo" className="w-9 h-9 object-contain" />
             <span className="font-display font-bold text-foreground">AI Student Companion</span>
           </div>
           <div className="flex items-center gap-3">
